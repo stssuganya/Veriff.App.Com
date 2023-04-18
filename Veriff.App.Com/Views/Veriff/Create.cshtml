@@ -1,0 +1,102 @@
+﻿@using Veriff.Core.Model
+@using Veriff.App.Com.Utilities;
+@model verification
+@{
+    ViewData["Title"] = "Create";
+    string apiKey =Utility.GetAppSettings("ApiKey");
+    string baseUrl = Utility.GetAppSettings("VeriffApiUrl");
+}
+
+
+<script src="~/js/jquery-3.1.1.min.js"></script>
+<script src='https://cdn.veriff.me/sdk/js/1.5/veriff.min.js'></script>
+<script src='https://cdn.veriff.me/incontext/js/v1/veriff.js'></script>
+
+    <div id='veriff-root' style="width:400px">
+        
+    </div>
+
+<script type="text/javascript">
+   /* $(function () {*/
+        //const veriff = Veriff({
+        //    apiKey: 'API_KEY',
+        //    parentId: 'veriff-root',
+        //    onSession: function (err, response) {
+        //        // received the response, verification can be started now
+        //    }
+        //});
+
+        //veriff.mount();
+    /* })*/
+     var apiKey = '@apiKey';
+    var baseUrl='@baseUrl'
+    const veriff = Veriff({
+        apiKey: apiKey,
+        parentId: 'veriff-root',
+        onSession: function (err, response) {
+            // received the response, verification can be started / triggered now
+
+            // redirect
+            //window.location.href = response.verification.url;
+
+            // incontext sdk
+            window.veriffSDK.createVeriffFrame({
+                url: response.verification.url,
+                onEvent: function (msg) {
+                    switch (msg) {
+                        case MESSAGES.CANCELED.toString():
+                            alert("CANCELED")
+                        case MESSAGES.STARTED.toString():
+                            alert("STARTED")
+                        case MESSAGES.FINISHED.toString():
+                            alert("FINISHED")
+
+                    }
+                } });
+        }
+    });
+
+    veriff.mount();
+
+    //$("#btnVeriff").click(function ()
+    //{
+    //    debugger;
+    //        var fName = $("#person_firstName").val();
+    //        var LName = $("#person_lastName").val();
+    //        var dob = $("#person_dateOfBirth").val();
+    //        var docType = $("#document_type").val();
+    //    var gender = $('input[name="person.gender"]:checked').val();;
+    //        var settings = {
+    //            "url": baseUrl+ "/v1/sessions/",
+    //            "method": "POST",
+    //            "timeout": 0,
+    //            "headers": {
+    //                "Content-Type": "application/json",
+    //                "X-AUTH-CLIENT": apiKey
+    //    },
+    //            "data": JSON.stringify({
+    //                "verification": {
+    //                    "callback": "https://veriff.me",
+    //                    "person": {
+    //                        "firstName": fName,
+    //                        "lastName": LName,
+    //                        "dateOfBirth": dob,
+    //                        "gender": gender
+    //                    },
+    //                    "document": {
+    //                        "type": docType,
+    //                        "country": "US"
+    //                    },
+    //                    "vendorData": "Postman test"
+    //                }
+    //            }),
+    //        };
+
+    //        $.ajax(settings).done(function (response) {
+    //            console.log(response);
+    //        });
+    //    });
+
+</script>
+
+
