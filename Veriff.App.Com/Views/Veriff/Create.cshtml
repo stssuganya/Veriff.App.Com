@@ -3,100 +3,117 @@
 @model verification
 @{
     ViewData["Title"] = "Create";
-    string apiKey =Utility.GetAppSettings("ApiKey");
+    string apiKey = Utility.GetAppSettings("ApiKey");
     string baseUrl = Utility.GetAppSettings("VeriffApiUrl");
+    string secretKey = Utility.GetAppSettings("SecretKey");
 }
-
 
 <script src="~/js/jquery-3.1.1.min.js"></script>
 <script src='https://cdn.veriff.me/sdk/js/1.5/veriff.min.js'></script>
 <script src='https://cdn.veriff.me/incontext/js/v1/veriff.js'></script>
+@*for hash algorithm*@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/forge/0.8.2/forge.all.min.js"></script>
+<button onclick="getVeriffStatus();">GetVeriffStatus</button>
+<div id='veriff-root' style="width:400px">
 
-    <div id='veriff-root' style="width:400px">
-        
-    </div>
+</div>
 
 <script type="text/javascript">
-   /* $(function () {*/
-        //const veriff = Veriff({
-        //    apiKey: 'API_KEY',
-        //    parentId: 'veriff-root',
-        //    onSession: function (err, response) {
-        //        // received the response, verification can be started now
-        //    }
-        //});
-
-        //veriff.mount();
-    /* })*/
+    var sessionId;
      var apiKey = '@apiKey';
-    var baseUrl='@baseUrl'
+    var baseUrl = '@baseUrl'
+    var hashText;
     const veriff = Veriff({
         apiKey: apiKey,
         parentId: 'veriff-root',
         onSession: function (err, response) {
+            //assign session Id in variable
+            sessionId = response.verification.id;
             // received the response, verification can be started / triggered now
-
-            // redirect
-            //window.location.href = response.verification.url;
 
             // incontext sdk
             window.veriffSDK.createVeriffFrame({
                 url: response.verification.url,
-                onEvent: function (msg) {
+                onEvent: function (msg, response) {
                     switch (msg) {
-                        case MESSAGES.CANCELED.toString():
+                        case 'CANCELED':
                             alert("CANCELED")
-                        case MESSAGES.STARTED.toString():
+                            break;
+                        case 'STARTED':
                             alert("STARTED")
-                        case MESSAGES.FINISHED.toString():
+                            break;
+                        case 'FINISHED':
+                            PatchVeriffStatus();
+                            getVeriffStatus();
                             alert("FINISHED")
-
+                            break;
+                        default:
+                            alert(msg.err);
+                            break;
                     }
-                } });
+
+            } });
         }
     });
 
-    veriff.mount();
+    veriff.mount();    
+    function getVeriffStatus() {
+        //base Url with response method(decision) and sessionId
+        var Baseurl = '@baseUrl' + '/v1/sessions/' + sessionId + '/decision';
 
-    //$("#btnVeriff").click(function ()
-    //{
-    //    debugger;
-    //        var fName = $("#person_firstName").val();
-    //        var LName = $("#person_lastName").val();
-    //        var dob = $("#person_dateOfBirth").val();
-    //        var docType = $("#document_type").val();
-    //    var gender = $('input[name="person.gender"]:checked').val();;
-    //        var settings = {
-    //            "url": baseUrl+ "/v1/sessions/",
-    //            "method": "POST",
-    //            "timeout": 0,
-    //            "headers": {
-    //                "Content-Type": "application/json",
-    //                "X-AUTH-CLIENT": apiKey
-    //    },
-    //            "data": JSON.stringify({
-    //                "verification": {
-    //                    "callback": "https://veriff.me",
-    //                    "person": {
-    //                        "firstName": fName,
-    //                        "lastName": LName,
-    //                        "dateOfBirth": dob,
-    //                        "gender": gender
-    //                    },
-    //                    "document": {
-    //                        "type": docType,
-    //                        "country": "US"
-    //                    },
-    //                    "vendorData": "Postman test"
-    //                }
-    //            }),
-    //        };
+        //create SHA256 hash encryption with secret key
+        var hmac = forge.hmac.create();
+        hmac.start('sha256', '@secretKey');
+        hmac.update(sessionId);
+        var hashText = hmac.digest().toHex();
 
-    //        $.ajax(settings).done(function (response) {
-    //            console.log(response);
-    //        });
-    //    });
+        //get veriff response details
+        $.ajax({
+            url: Baseurl,
+            method: 'GET',
+            headers:
+            {
+                'Content-Type': 'application/json',
+                'X-HMAC-SIGNATURE': hashText,
+                'X-AUTH-CLIENT': '@apiKey'
+            },
+            success: function (result) {
+                console.log(result)
+            }
+
+        });
+    }
+
+     function PatchVeriffStatus() {
+        //base Url with response method(decision) and sessionId
+        var Baseurl = '@baseUrl' + '/v1/sessions/' + sessionId + '/decision';
+
+        //create SHA256 hash encryption with secret key
+        var hmac = forge.hmac.create();
+        hmac.start('sha256', '@secretKey');
+        hmac.update(sessionId);
+        var hashText = hmac.digest().toHex();
+
+        //get veriff response details
+        $.ajax({
+            url: Baseurl,
+            method: 'GET',
+            headers:
+            {
+                'Content-Type': 'application/json',
+                'X-HMAC-SIGNATURE': hashText,
+                'X-AUTH-CLIENT': '@apiKey'
+            },
+            body:
+            {
+                verification:
+                    { status: 'submitted' }
+            },
+            success: function (result) {
+                console.log(result)
+            }
+
+        });
+    }
 
 </script>
-
-
